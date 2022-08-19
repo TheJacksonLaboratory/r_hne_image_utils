@@ -89,3 +89,49 @@ process.hovernet.centroids <- function(hovernet_centroid_file, json_cell_info_fi
   ret.list <- list("hovernet_tiles" = hovernet_tiles, "hovernet_slides" = hovernet_slides, "hovernet_nuclei" = hovernet_centroids)
   return(ret.list)
 }
+
+#' Extract cell type info from Hover-Net type_info.json file
+#'
+#' @param json_path A string holding the path to the type_info.json file input to Hover-Net
+#' @return A data.frame whose rows correspond to a cell type and with columns:
+#            id: the cell type id (e.g., as included in the Hover-Net JSON output)
+#            label: the label of the cell type (e.g., neopla, etc)
+#            r_color: the red channel of the RGB color specification used by Hover-Net for this cell type
+#            g_color: the green channel of the RGB color specification used by Hover-Net for this cell type
+#            b_color: the blue channel of the RGB color specification used by Hover-Net for this cell type
+extract.hovernet.cell.info <- function(json.type.info.path) {
+
+  cell.dict <- fromJSON(file=json.type.info.path)
+  df <- 
+    ldply(cell.dict,
+          .fun = function(elem) {
+            data.frame(label = elem[[1]], 
+                       r_color = elem[[2]][1], g_color = elem[[2]][2], b_color = elem[[2]][3])
+          })
+  colnames(df)[1] <- "id"
+  df
+}
+
+#' Extract cell info (e.g., centroid location and cell type) from Hover-Net JSON output.
+#'
+#' @param json_path A string holding the path to the json file output by Hover-Net
+#' @return A list containing
+#'           mag: the magnification at which Hover-Net was run
+#'           df: A data.frame whose rows correspond to cells and with columns:
+#'             id: the id of the cell
+#'             centroid_x, centroid_y: the x and y coordinates of the cell's centroid
+#'             type: cell type identifier to be cross referenced with HoverNet type_info.json file
+#'             type_prob: the probability of cell type
+extract.cell.info.from.hovernet.output <- function(json.path) {
+  js <- fromJSON(file=json.path)
+  mag <- js["mag"]
+  # length(js[["nuc"]])
+  df <- 
+    ldply(js[["nuc"]],
+          .fun = function(elem) {
+            data.frame(centroid.x = elem$centroid[1], centroid.y = elem$centroid[2],
+                       type = elem$type, type_prob = elem$type_prob)
+          })
+  colnames(df)[1] <- "id"
+  list("mag" = mag, "df" = df)
+}
