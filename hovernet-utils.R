@@ -13,6 +13,7 @@
 #' @param hovernet.resolution An int giving the resolution at which Hover-Net was run (likely, 40 as this is the
 #'                            resolution at which Hover-Net was trained on the PanNuke dataset)
 #' @param tile_size An int giving the length and width of the tile in the _target.image.resolution_
+#' @param slides.only A boolean indicating whether the return list should only contain hovernet_slides (see below)
 #' @return a list with three entries:
 #'         hovernet_tiles is a data.frame, where each row corresponds to a particular cell type in a particular tile
 #'                         and the columns are:
@@ -36,7 +37,7 @@
 #'                         centroid_x, centroid_y: the x, y coordinates of the cell
 #'                         tile_x, tile_y: the top-left coordinates of the tile to which the cell belongs
 #'                         cell_area: the area of the cell
-process.hovernet.centroids <- function(hovernet_centroid_file, json_cell_info_file, target.image.resolution = 20, hovernet.resolution = 40, tile_size = 512) {
+process.hovernet.centroids <- function(hovernet_centroid_file, json_cell_info_file, target.image.resolution = 20, hovernet.resolution = 40, tile_size = 512, slides.only = FALSE) {
   # hovernet_centroids <- read.table(hovernet_centroid_file, sep=",", header=TRUE)
   hovernet_centroids <- fread(hovernet_centroid_file)
   
@@ -83,6 +84,11 @@ process.hovernet.centroids <- function(hovernet_centroid_file, json_cell_info_fi
             slide_area = sum(df$area)
             data.frame(cell_type_label = cell_type_label, count = slide_count, area = slide_area)
           })
+
+  if(slides.only) { 
+    ret.list <- list("hovernet_slides" = hovernet_slides)
+    return(ret.list)
+  }
 
   hovernet_centroids <- hovernet_centroids[, c("image_id", "centroid_x", "centroid_y", "tile_x", "tile_y", "cell_type_label", "cell_type_area")]
   colnames(hovernet_centroids) <- c("image_id", "centroid_x", "centroid_y", "tile_x", "tile_y", "cell_type_label", "cell_area")
